@@ -7,6 +7,7 @@ import speech_recognition as sr
 import requests
 import asyncio
 import edge_tts
+import moviepy.video.fx as vfx
 
 # Set up the Streamlit page configuration
 st.set_page_config(page_title='AI Video Generator', layout='wide')
@@ -92,13 +93,12 @@ if uploaded_file is not None:
 
         # Ensure the audio syncs with the video length
         if audio_clip.duration < video.duration:
-            audio_clip = audio_clip.fx(lambda clip: clip.audio.loop(duration=video.duration))  # Loop audio
+            audio_clip = audio_clip.fx(vfx.loop, duration=video.duration)  # Loop audio
         else:
-            audio_clip = audio_clip.subclip(0, video.duration)  # Trim audio
+            audio_clip = audio_clip.subclip(0, video.duration)  # Trim audio to match video length
 
         final_video = video.set_audio(audio_clip)  # Set the new audio to the video
         final_video.write_videofile("myVideo.mp4", codec="libx264", audio_codec="aac")  # Save the final video
-
 
         # Download button for the final video
         st.success("Video has been processed and is ready for download.")
