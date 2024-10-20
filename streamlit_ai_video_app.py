@@ -92,13 +92,12 @@ if uploaded_file is not None:
 
         # Ensure the audio syncs with the video length
         if audio_clip.duration < video.duration:
-            audio_clip = audio_clip.fx(lambda clip: clip.audio.loop(duration=video.duration))  # Loop audio
+            audio_clip = audio_clip.audio_loop(duration=video.duration)  # Use audio_loop to repeat the audio
         else:
             audio_clip = audio_clip.subclip(0, video.duration)  # Trim audio
 
         final_video = video.set_audio(audio_clip)  # Set the new audio to the video
         final_video.write_videofile("myVideo.mp4", codec="libx264", audio_codec="aac")  # Save the final video
-
 
         # Download button for the final video
         st.success("Video has been processed and is ready for download.")
