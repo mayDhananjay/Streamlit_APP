@@ -7,7 +7,6 @@ import speech_recognition as sr
 import requests
 import asyncio
 import edge_tts
-import moviepy.video.fx as vfx
 
 # Set up the Streamlit page configuration
 st.set_page_config(page_title='AI Video Generator', layout='wide')
@@ -16,10 +15,6 @@ st.set_page_config(page_title='AI Video Generator', layout='wide')
 st.title('🎥 AI Video Generator')
 st.subheader('Upload a video file to enhance it with AI-generated audio.')
 
-# Initialize session state variables
-if 'processed' not in st.session_state:
-    st.session_state.processed = False
-
 # File uploader for video files
 uploaded_file = st.file_uploader("Choose a video file", type=["mp4", "mov", "avi"])
 
@@ -27,6 +22,9 @@ if uploaded_file is not None:
     # Save the uploaded video to a file
     with open("uploaded_video.mp4", "wb") as f:
         f.write(uploaded_file.read())
+
+    # Display the uploaded video in a smaller size
+    st.video("uploaded_video.mp4")
 
     # Extract audio from the uploaded video
     video = VideoFileClip("uploaded_video.mp4")
@@ -87,26 +85,22 @@ if uploaded_file is not None:
 
     # Check if improved text exists
     if 'improved_text' in locals():
-        with st.spinner("Processing video, please wait..."):
-            output_audio_file = asyncio.run(text_to_speech(improved_text))  # Generate audio from improved text
+        output_audio_file = asyncio.run(text_to_speech(improved_text))  # Generate audio from improved text
 
-            # Merge the new audio back into the video
-            audio_clip = AudioFileClip(output_audio_file)
+        # Merge the new audio back into the video
+        audio_clip = AudioFileClip(output_audio_file)
 
-            # Ensure the audio syncs with the video length
-            if audio_clip.duration < video.duration:
-                audio_clip = audio_clip.fx(vfx.loop, duration=video.duration)  # Loop audio
-            else:
-                audio_clip = audio_clip.subclip(0, video.duration)  # Trim audio to match video length
+        # Ensure the audio syncs with the video length
+        if audio_clip.duration < video.duration:
+            audio_clip = audio_clip.fx(lambda clip: clip.audio.loop(duration=video.duration))  # Loop audio
+        else:
+            audio_clip = audio_clip.subclip(0, video.duration)  # Trim audio
 
-            final_video = video.set_audio(audio_clip)  # Set the new audio to the video
-            final_video.write_videofile("myVideo.mp4", codec="libx264", audio_codec="aac")  # Save the final video
+        final_video = video.set_audio(audio_clip)  # Set the new audio to the video
+        final_video.write_videofile("myVideo.mp4", codec="libx264", audio_codec="aac")  # Save the final video
 
-            # Mark as processed
-            st.session_state.processed = True
 
-# Show the download button only if the video has been processed
-if st.session_state.processed:
-    st.success("Video has been processed and is ready for download.")
-    with open("myVideo.mp4", "rb") as file:
-        st.download_button(label="Download Final Video", data=file, file_name="myVideo.mp4")
+        # Download button for the final video
+        st.success("Video has been processed and is ready for download.")
+        with open("myVideo.mp4", "rb") as file:
+            st.download_button(label="Download Final Video", data=file, file_name="myVideo.mp4")
